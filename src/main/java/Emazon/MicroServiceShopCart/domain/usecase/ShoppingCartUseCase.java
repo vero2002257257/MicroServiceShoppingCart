@@ -4,18 +4,19 @@ package Emazon.MicroServiceShopCart.domain.usecase;
 import Emazon.MicroServiceShopCart.domain.api.IShoppingCartServicePort;
 import Emazon.MicroServiceShopCart.domain.exception.InvalidQuantityProducts;
 import Emazon.MicroServiceShopCart.domain.exception.OutOfStockException;
+import Emazon.MicroServiceShopCart.domain.exception.ShoppingCartNotFound;
 import Emazon.MicroServiceShopCart.domain.models.Item;
 import Emazon.MicroServiceShopCart.domain.models.Product;
 import Emazon.MicroServiceShopCart.domain.models.ShoppingCart;
 import Emazon.MicroServiceShopCart.domain.spi.IProductPersistencePort;
 import Emazon.MicroServiceShopCart.domain.spi.IShoppingCartPersistencePort;
 import Emazon.MicroServiceShopCart.domain.spi.ItemPersistencePort;
+import Emazon.MicroServiceShopCart.infrastructure.exception.ItemNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static Emazon.MicroServiceShopCart.utils.Constants.INVALID_QUANTITY_PRODUCTS;
-import static Emazon.MicroServiceShopCart.utils.Constants.OUT_OF_STOCK;
+import static Emazon.MicroServiceShopCart.utils.Constants.*;
 
 
 public class ShoppingCartUseCase implements IShoppingCartServicePort {
@@ -55,9 +56,29 @@ public class ShoppingCartUseCase implements IShoppingCartServicePort {
         updateShoppingCart(shoppingCart);
     }
 
+    @Override
+    public void removeProduct(Long productId, Long userId) {
+        ShoppingCart shoppingCart = getShoppingCart(userId);
+        boolean productRemoved = shoppingCart.getItems().removeIf(item -> item.getProductId().equals(productId));
+
+        if (!productRemoved) {
+            throw new ItemNotFoundException(PRODUCT_NOT_FOUND_ON_CART);
+        }
+
+        shoppingCart.setActualizationDate(LocalDateTime.now());
+        shoppingCartPersistencePort.updateCart(shoppingCart);
+    }
+
+
+
     private ShoppingCart getOrCreateShoppingCart(Long userId) {
         return shoppingCartPersistencePort.getShoppingCartByUserId(userId)
                 .orElseGet(() -> shoppingCartPersistencePort.createShoppingCart(userId));
+    }
+
+    private ShoppingCart getShoppingCart(Long userId) {
+        return shoppingCartPersistencePort.getShoppingCartByUserId(userId)
+                .orElseThrow(() -> new ShoppingCartNotFound(SHOPPING_CART_NOT_FOUND));
     }
 
     private Product getProduct(Long productId) {

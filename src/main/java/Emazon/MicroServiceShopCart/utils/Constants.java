@@ -19,4 +19,6 @@ public class Constants {
     public static final String STATUS = "status";
     public static final String PRODUCT_NOT_FOUND = "No se encontraron productos";
     public static final String UNEXPECTED_ERROR = "Ha ocurrido un error inesperado";
+    public static final String SHOPPING_CART_NOT_FOUND = "No se encontro el carrito de compras";
+    public static final String PRODUCT_NOT_FOUND_ON_CART = "No se encontro el producto";
 }

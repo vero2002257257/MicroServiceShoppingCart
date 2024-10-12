@@ -32,7 +32,7 @@ public class BeanConfiguration {
 
     @Bean
     public IShoppingCartPersistencePort shoppingCarPersistencePort() {
-        return new ShoppingCartJpaAdapter(shoppingCarRepository, shoppingCartEntityMapper, cartItemRepository);
+        return new ShoppingCartJpaAdapter(shoppingCarRepository, shoppingCartEntityMapper);
     }
 
     @Bean
@@ -44,6 +44,8 @@ public class BeanConfiguration {
     public ItemPersistencePort itemPersistencePort() {
         return new ItemJpaAdapter(cartItemRepository, itemCartEntityMapper, shoppingCarRepository);
     }
+
+
 
     @Bean
     public StockFeignClient stockFeignClient() {

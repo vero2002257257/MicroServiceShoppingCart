@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import static Emazon.MicroServiceShopCart.utils.Constants.NOT_SHOPPING_CART;
@@ -24,7 +23,7 @@ public class ShoppingCartJpaAdapter implements IShoppingCartPersistencePort {
 
     private final IShoppingCartRepository shoppingCartRepository;
     private final ShoppingCartEntityMapper shoppingCartEntityMapper;
-    private final ICartItemRepository itemCartRepository;
+
 
 
 
@@ -54,9 +53,14 @@ public class ShoppingCartJpaAdapter implements IShoppingCartPersistencePort {
 
     @Override
     public void updateCart(ShoppingCart shoppingCart) {
-        ShoppingCartEntity shoppingCartEntity = shoppingCartEntityMapper.toEntity(shoppingCart);
-        List<ItemCartEntity> items = itemCartRepository.findAllByShoppingCartEntity_Id(shoppingCart.getId());
-        shoppingCartEntity.setItems(items);
+        ShoppingCartEntity shoppingCartEntity = shoppingCartEntityMapper.toEntityWithItems(shoppingCart);
         shoppingCartRepository.save(shoppingCartEntity);
+    }
+
+    @Override
+    public void removeProduct(Long productId, Long userId) {
+        ShoppingCart shoppingCart = getShoppingCartByUserId(userId)
+                .orElseThrow(() -> new NotShoppingCartFound(NOT_SHOPPING_CART));
+        updateCart(shoppingCart);
     }
 }

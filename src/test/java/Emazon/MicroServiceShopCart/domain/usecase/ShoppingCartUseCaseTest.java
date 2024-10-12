@@ -2,6 +2,7 @@ package Emazon.MicroServiceShopCart.domain.usecase;
 
 import Emazon.MicroServiceShopCart.domain.exception.InvalidQuantityProducts;
 import Emazon.MicroServiceShopCart.domain.exception.OutOfStockException;
+import Emazon.MicroServiceShopCart.domain.exception.ShoppingCartNotFound;
 import Emazon.MicroServiceShopCart.domain.models.Category;
 import Emazon.MicroServiceShopCart.domain.models.Item;
 import Emazon.MicroServiceShopCart.domain.models.Product;
@@ -9,16 +10,14 @@ import Emazon.MicroServiceShopCart.domain.models.ShoppingCart;
 import Emazon.MicroServiceShopCart.domain.spi.IProductPersistencePort;
 import Emazon.MicroServiceShopCart.domain.spi.IShoppingCartPersistencePort;
 import Emazon.MicroServiceShopCart.domain.spi.ItemPersistencePort;
+import Emazon.MicroServiceShopCart.infrastructure.exception.ItemNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -189,4 +188,70 @@ class ShoppingCartUseCaseTest {
         verify(productPersistencePort).getProductById(3L);
         verify(productPersistencePort).getProductById(4L);
     }
+
+
+    @Test
+    void removeProduct() {
+
+        // Arrange
+        Long userId = 1L;
+        Long productId = 1L;
+
+        Item item1 = new Item();
+        item1.setProductId(1L);
+
+        Item item2 = new Item();
+        item2.setProductId(2L);
+
+        ShoppingCart shoppingCart = new ShoppingCart();
+        shoppingCart.setItems(new ArrayList<>(List.of(item1, item2)));
+
+        when(shoppingCartPersistencePort.getShoppingCartByUserId(userId))
+                .thenReturn(Optional.of(shoppingCart));
+
+        // Act
+        shoppingCartUseCase.removeProduct(productId, userId);
+
+        // Assert
+        assertEquals(1, shoppingCart.getItems().size());
+        verify(shoppingCartPersistencePort, times(1)).updateCart(shoppingCart);
+    }
+
+    @Test
+    void removeProduct_shouldThrowItemNotFoundExceptionIfProductNotInCart() {
+        // Arrange
+        Long userId = 1L;
+        Long productId = 3L; // Product not in cart
+
+        Item item1 = new Item();
+        item1.setProductId(1L);
+
+        Item item2 = new Item();
+        item2.setProductId(2L);
+
+        ShoppingCart shoppingCart = new ShoppingCart();
+        shoppingCart.setItems(new ArrayList<>(List.of(item1, item2)));
+
+        when(shoppingCartPersistencePort.getShoppingCartByUserId(userId))
+                .thenReturn(Optional.of(shoppingCart));
+
+        // Act & Assert
+        assertThrows(ItemNotFoundException.class, () -> shoppingCartUseCase.removeProduct(productId, userId));
+        verify(shoppingCartPersistencePort, never()).updateCart(shoppingCart);  // No se debería llamar a updateCart
+    }
+
+    @Test
+    void removeProduct_shouldThrowShoppingCartNotFoundExceptionIfCartDoesNotExist() {
+        // Arrange
+        Long userId = 1L;
+        Long productId = 1L;
+
+        when(shoppingCartPersistencePort.getShoppingCartByUserId(userId))
+                .thenReturn(Optional.empty()); // Carrito no encontrado
+
+        // Act & Assert
+        assertThrows(ShoppingCartNotFound.class, () -> shoppingCartUseCase.removeProduct(productId, userId));
+        verify(shoppingCartPersistencePort, never()).updateCart(any());  // No se debería llamar a updateCart
+    }
+
 }
